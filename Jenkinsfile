@@ -9,35 +9,61 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git'  // Updated GitHub repo
+                script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git']]
+                    ])
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
+                sh '''
+                    echo "Building Docker Image..."
+                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                '''
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
                 withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKERHUB_PASSWORD')]) {
-                    sh 'echo $DOCKERHUB_PASSWORD | docker login -u dhiraj918106 --password-stdin'
+                    sh '''
+                        echo "Logging in to Docker Hub..."
+                        echo $DOCKERHUB_PASSWORD | docker login -u dhiraj918106 --password-stdin
+                    '''
                 }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                sh 'docker push $IMAGE_NAME:$IMAGE_TAG'
+                sh '''
+                    echo "Pushing Docker Image to Docker Hub..."
+                    docker push $IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
 
         stage('Deploy with Docker Compose') {
             steps {
-                sh 'docker-compose pull'
-                sh 'docker-compose up -d'
+                sh '''
+                    echo "Pulling latest image and starting container..."
+                    docker-compose pull
+                    docker-compose up -d
+                '''
             }
+        }
+    }
+
+    post {
+        failure {
+            echo "❌ Build failed! Check logs for details."
+        }
+        success {
+            echo "✅ Deployment successful! FastAPI is running."
         }
     }
 }
