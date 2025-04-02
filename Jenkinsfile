@@ -2,68 +2,52 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "dhiraj918106/fastapi_jenkins"  // Your Docker Hub repository
-        IMAGE_TAG = "latest"
+        DOCKER_IMAGE = "dhiraj918106/fastapi_jenkins:latest"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                script {
-                    checkout([$class: 'GitSCM',
-                        branches: [[name: '*/main']],
-                        userRemoteConfigs: [[url: 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git']]
-                    ])
-                }
+                git 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh '''
+                script {
                     echo "Building Docker Image..."
-                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
-                '''
+                    sh "docker build -t ${DOCKER_IMAGE} ."
+                }
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKERHUB_TOKEN')]) {
-                    sh '''
-                        echo "Logging in to Docker Hub using PAT..."
-                        echo $DOCKERHUB_TOKEN | docker login -u dhiraj918106 --password-stdin
-                    '''
+                withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKERHUB_TOKEN')]) {
+                    script {
+                        echo "Logging in to Docker Hub..."
+                        sh "echo \$DOCKERHUB_TOKEN | docker login -u dhiraj918106 --password-stdin"
+                    }
                 }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                sh '''
+                script {
                     echo "Pushing Docker Image to Docker Hub..."
-                    docker push $IMAGE_NAME:$IMAGE_TAG
-                '''
-            }
-        }
-
-        stage('Deploy with Docker Compose') {
-            steps {
-                sh '''
-                    echo "Pulling latest image and starting container..."
-                    docker-compose pull
-                    docker-compose up -d
-                '''
+                    sh "docker push ${DOCKER_IMAGE}"
+                }
             }
         }
     }
 
     post {
+        success {
+            echo "✅ Build and push completed successfully!"
+        }
         failure {
             echo "❌ Build failed! Check logs for details."
-        }
-        success {
-            echo "✅ Deployment successful! FastAPI is running."
         }
     }
 }
