@@ -5,7 +5,7 @@ FROM python:3.13-slim
 WORKDIR /app
 
 # Copy application files
-COPY ./app /app
+COPY . /app
 
 # Install dependencies
 RUN pip install --no-cache-dir fastapi uvicorn
