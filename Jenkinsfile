@@ -29,10 +29,10 @@ pipeline {
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKERHUB_PASSWORD')]) {
+                withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKERHUB_TOKEN')]) {
                     sh '''
-                        echo "Logging in to Docker Hub..."
-                        echo $DOCKERHUB_PASSWORD | docker login -u dhiraj918106 --password-stdin
+                        echo "Logging in to Docker Hub using PAT..."
+                        echo $DOCKERHUB_TOKEN | docker login -u dhiraj918106 --password-stdin
                     '''
                 }
             }
