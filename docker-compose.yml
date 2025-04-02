@@ -1,0 +1,9 @@
+version: '3.9'
+
+services:
+  fastapi-app:
+    image: dhiraj918106/fastapi_jenkins:latest  # Updated to your Docker Hub repo
+    container_name: fastapi_container
+    restart: always
+    ports:
+      - "8000:8000"
