@@ -2,52 +2,58 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "dhiraj918106/fastapi_jenkins:latest"
+        IMAGE_NAME = "dhiraj918106/fastapi_jenkins"  // Your Docker Hub repository
+        IMAGE_TAG = "latest"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                git 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git'
+                script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/Dhiraj123-star/Fastapi_jenkins.git']]
+                    ])
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
+                sh '''
                     echo "Building Docker Image..."
-                    sh "docker build -t ${DOCKER_IMAGE} ."
-                }
+                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                '''
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'docker-hub-token', variable: 'DOCKERHUB_TOKEN')]) {
-                    script {
-                        echo "Logging in to Docker Hub..."
-                        sh "echo \$DOCKERHUB_TOKEN | docker login -u dhiraj918106 --password-stdin"
-                    }
+                withCredentials([string(credentialsId: 'docker-hub-credentials', variable: 'DOCKERHUB_TOKEN')]) {
+                    sh '''
+                        echo "Logging in to Docker Hub using PAT..."
+                        echo $DOCKERHUB_TOKEN | docker login -u dhiraj918106 --password-stdin
+                    '''
                 }
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                script {
+                sh '''
                     echo "Pushing Docker Image to Docker Hub..."
-                    sh "docker push ${DOCKER_IMAGE}"
-                }
+                    docker push $IMAGE_NAME:$IMAGE_TAG
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Build and push completed successfully!"
-        }
         failure {
             echo "❌ Build failed! Check logs for details."
+        }
+        success {
+            echo "✅ Docker image pushed successfully!"
         }
     }
 }
