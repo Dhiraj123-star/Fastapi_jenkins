@@ -25,7 +25,7 @@ collection = db.weather_data  # Collection name
 
 @app.get("/weather/")
 def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
-    """Fetches and stores the weather data for a given city"""
+    """Fetches and stores the weather data for a given city!!"""
     
     # Check if the city data is already in the DB (cache)
     existing_data = collection.find_one({"city": city})
