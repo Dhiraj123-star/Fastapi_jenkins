@@ -2,9 +2,27 @@ version: '3.9'
 
 services:
   fastapi-app:
-    image: dhiraj918106/fastapi_jenkins:latest  # Updated to your Docker Hub repo
+    image: dhiraj918106/fastapi_jenkins:latest
     container_name: fastapi_container
     restart: always
-    pull_policy: always  # Ensures the latest image is always pulled
+    pull_policy: always
     ports:
       - "8000:8000"
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+    env_file:
+      - .env
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo_container
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
