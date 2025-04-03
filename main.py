@@ -4,4 +4,5 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello, FastAPI with Docker and Jenkins!"}
+    return {"message": "Hello, FastAPI with Docker, Jenkins, and Auto Deployment!"}
+
