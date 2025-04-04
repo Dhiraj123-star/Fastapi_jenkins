@@ -77,7 +77,7 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     # Check if the city data is already in MongoDB (cache eviction applied)
     remove_old_mongo_data()  # Remove stale data from DB before querying
     existing_data = collection.find_one({"city": city})
-    
+
     if existing_data:
         logging.info(f"DB hit: Returning weather data for {city} from MongoDB")
         serialized_data = serialize_doc(existing_data)
@@ -103,7 +103,7 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
         "condition": data["current"]["condition"]["text"],
         "humidity": data["current"]["humidity"],
         "wind_kph": data["current"]["wind_kph"],
-        "timestamp": datetime.utcnow().isoformat()  # Convert datetime to string
+        "timestamp": datetime.utcnow()  # Store as datetime, not string
     }
 
     # Store in MongoDB (if exists, replace old data)
@@ -118,9 +118,11 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     logging.info(f"Cache Eviction: Removed outdated Redis cache for {city}")
 
     # Store in Redis cache for 5 minutes
+    weather_record["timestamp"] = weather_record["timestamp"].isoformat()  # Convert before caching
     redis_client.setex(city, CACHE_EXPIRY, json.dumps(weather_record))
 
     return weather_record
+
 
 @app.get("/weather/history/")
 def get_weather_history():
