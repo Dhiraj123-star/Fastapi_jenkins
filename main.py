@@ -1,13 +1,13 @@
 import os
 import requests
 import logging
+import json
 from fastapi import FastAPI, Depends
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from redis import Redis
 from datetime import datetime, timedelta
 from bson import ObjectId
-import json
 
 # Load environment variables
 load_dotenv()
@@ -94,12 +94,18 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     }
 
     # Store in MongoDB (if exists, replace old data)
-    collection.replace_one({"city": city}, weather_record, upsert=True)
+    collection.update_one(
+        {"city": city},
+        {"$set": weather_record},
+        upsert=True
+    )
 
     # Invalidate Redis cache for updated city data
     redis_client.delete(city)
+    logging.info(f"Cache Eviction: Removed outdated Redis cache for {city}")
 
     # Store in Redis cache for 5 minutes
+    weather_record["timestamp"] = weather_record["timestamp"].isoformat()  # Convert datetime to string
     redis_client.setex(city, CACHE_EXPIRY, json.dumps(weather_record))
 
     return weather_record
