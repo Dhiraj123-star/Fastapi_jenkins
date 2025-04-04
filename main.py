@@ -4,6 +4,7 @@ from fastapi import FastAPI, Depends
 from dotenv import load_dotenv
 from pymongo import MongoClient
 from datetime import datetime
+from bson import ObjectId
 
 # Load environment variables
 load_dotenv()
@@ -18,19 +19,24 @@ def get_weather_api_key():
     return api_key
 
 # MongoDB connection setup
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017")  # Default to Docker service name
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017")  # Docker service default
 client = MongoClient(MONGO_URI)
 db = client.weather_db  # Database name
 collection = db.weather_data  # Collection name
 
+# Utility to serialize MongoDB documents
+def serialize_doc(doc):
+    doc["_id"] = str(doc["_id"])  # Convert ObjectId to str
+    return doc
+
 @app.get("/weather/")
 def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
-    """Fetches and stores the weather data for a given city!!"""
-    
+    """Fetches and stores the weather data for a given city"""
+
     # Check if the city data is already in the DB (cache)
     existing_data = collection.find_one({"city": city})
     if existing_data:
-        return {**existing_data, "_id": str(existing_data["_id"])}
+        return serialize_doc(existing_data)
 
     url = f"http://api.weatherapi.com/v1/current.json?key={api_key}&q={city}"
     response = requests.get(url)
@@ -52,12 +58,13 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     }
 
     # Store in MongoDB
-    collection.insert_one(weather_record)
+    result = collection.insert_one(weather_record)
+    weather_record["_id"] = str(result.inserted_id)
 
     return weather_record
 
 @app.get("/weather/history/")
 def get_weather_history():
     """Retrieve stored weather data"""
-    history = list(collection.find({}, {"_id": 0}))  # Exclude MongoDB ObjectID
+    history = [serialize_doc(doc) for doc in collection.find()]
     return {"history": history}
