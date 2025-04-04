@@ -33,7 +33,7 @@ logging.basicConfig(
 def get_weather_api_key():
     api_key = os.getenv("WEATHER_API_KEY")
     if not api_key:
-        raise ValueError("Weather API key is missing. Set it in the .env file.")
+        raise ValueError("Weather API key is missing. Set it in the .env file!!")
     return api_key
 
 # MongoDB connection setup
