@@ -43,6 +43,7 @@ MONGO_DATA_EXPIRY_MINUTES = 10  # Auto-delete records older than 10 minutes
 # Utility to serialize MongoDB documents
 def serialize_doc(doc):
     doc["_id"] = str(doc["_id"])  # Convert ObjectId to str
+    doc["timestamp"] = doc["timestamp"].isoformat()  # Convert datetime to string
     return doc
 
 # Cache Eviction: Remove old MongoDB records
@@ -90,7 +91,7 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
         "condition": data["current"]["condition"]["text"],
         "humidity": data["current"]["humidity"],
         "wind_kph": data["current"]["wind_kph"],
-        "timestamp": datetime.utcnow()
+        "timestamp": datetime.utcnow().isoformat()  # Convert datetime to string
     }
 
     # Store in MongoDB (if exists, replace old data)
@@ -105,7 +106,6 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     logging.info(f"Cache Eviction: Removed outdated Redis cache for {city}")
 
     # Store in Redis cache for 5 minutes
-    weather_record["timestamp"] = weather_record["timestamp"].isoformat()  # Convert datetime to string
     redis_client.setex(city, CACHE_EXPIRY, json.dumps(weather_record))
 
     return weather_record
