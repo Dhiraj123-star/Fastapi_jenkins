@@ -15,8 +15,19 @@ load_dotenv()
 # Initialize FastAPI
 app = FastAPI()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# Ensure logs directory exists
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# Configure logging (ONLY logs to file, no terminal output)
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_FILE)  # Log only to file
+    ]
+)
 
 # Dependency to get API key securely
 def get_weather_api_key():
@@ -79,6 +90,7 @@ def get_weather(city: str, api_key: str = Depends(get_weather_api_key)):
     response = requests.get(url)
 
     if response.status_code != 200:
+        logging.error(f"API Error: Failed to fetch weather data for {city}")
         return {"error": "Failed to fetch weather data"}
     
     data = response.json()
